@@ -101,8 +101,8 @@ function runtime() {
   }
   load("lg-remote-control.ts");
   return {
-    Card: registry.get("lg-remote-control"),
-    Editor: registry.get("lg-remote-control-editor"),
+    Card: registry.get("lg-uf778-remote"),
+    Editor: registry.get("lg-uf778-remote-editor"),
     names: load("entity-name.ts"),
     customElements,
     advance(milliseconds) {
@@ -402,3 +402,31 @@ test("volume clicks and holds keep using the configured services on mouse and to
     }
   }
 });
+test("UF778 routes sound buttons through real selectors and respects unavailable state", () => {
+  const {card, hass, calls, tv} = fixture({audio_input_entity:"select.input",audio_output_entity:"select.output"});
+  hass.states['select.input'] = {state:'HDMI ARC',attributes:{options:['HDMI ARC','Оптика / Coax']}};
+  hass.states['select.output'] = {state:'Динамики ТВ',attributes:{options:['Динамики ТВ','ТВ + внешний выход']}};
+  card._select_sound_output('external_arc');
+  card._select_sound_output('external_optical');
+  card._select_sound_output('tv_speaker');
+  assert.deepEqual(plain(calls), [
+    ['select','select_option',{entity_id:'select.input',option:'HDMI ARC'}],
+    ['select','select_option',{entity_id:'select.input',option:'Оптика / Coax'}],
+    ['select','select_option',{entity_id:'select.output',option:'Динамики ТВ'}]
+  ]);
+  tv.attributes.sound_output='external_speaker';
+  assert.equal(card._isExternalAudioSelected('HDMI ARC','external_arc'),true);
+  tv.attributes.sound_output='tv_speaker';
+  assert.equal(card._isExternalAudioSelected('HDMI ARC','external_arc'),false);
+  hass.states['select.input'].state='unavailable';
+  card._select_sound_output('external_arc');
+  assert.equal(calls.length,3);
+});
+
+test("UF778 source ordering preserves the original state and remaining order", () => {
+  const {card} = fixture();
+  const sources=Object.freeze(['Netflix','APPLE','PS5','ONKYO','YouTube']);
+  assert.deepEqual(plain(card._orderedSources(sources)),['PS5','ONKYO','APPLE','Netflix','YouTube']);
+  assert.equal(sources[0],'Netflix');
+});
+
