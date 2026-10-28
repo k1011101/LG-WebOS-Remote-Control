@@ -1,5 +1,6 @@
 {
-"name": "LG WebOS Remote Control",
-"filename": "lg-remote-control.js",
+"name": "LG UF778 Remote (Onkyo selectors)",
+"filename": "lg-uf778-remote.js",
+"content_in_root": true,
 "render_readme" : true
 }
