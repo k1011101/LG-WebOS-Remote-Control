@@ -119,7 +119,7 @@ class LgRemoteControl extends LitElement {
 
         if (this.config.ampli_entity &&
             (this.hass.states[this.config.entity].attributes.sound_output === 'external_arc' ||
-                this.hass.states[this.config.entity].attributes.sound_output === 'external_optical')) {
+                ['external_optical', 'external_speaker', 'tv_external_speaker'].includes(this.hass.states[this.config.entity].attributes.sound_output))) {
 
             this.volume_value = Math.round(this.hass.states[this.config.ampli_entity].attributes.volume_level * 100 * 2) / 2;
             this.output_entity = this.config.ampli_entity;
@@ -154,7 +154,7 @@ class LgRemoteControl extends LitElement {
                             <button class="ripple bnt-input-back" @click=${() => this._show_inputs = false}><ha-icon icon="mdi:undo-variant"/></button>
                             <p class="source_text"><b>SOURCE</b></p>
                             <div class="grid-item-input">
-                                ${stateObj.attributes.source_list.map(source => html`
+                                ${this._orderedSources(stateObj.attributes.source_list).map(source => html`
                                     <button class="${stateObj.attributes.source === source ? 'btn-input-on' : 'btn-input  ripple overlay'}" @click=${() => {
                                         this._select_source(source);
                                         this._show_inputs = false;
@@ -172,11 +172,11 @@ class LgRemoteControl extends LitElement {
                                 <button class="bnt-sound-back ripple"  @click=${() => this._show_sound_output = false}><ha-icon icon="mdi:undo-variant"/></button>
                                 ${this._show_text ? html`
                                     <button class="btn_soundoutput ripple" @click=${() => this._show_text = false}>SOUND</button>
-                                    <button class="${stateObj.attributes.sound_output === "tv_speaker" ? 'btn_sound_on tv bnt_sound_text_width' : 'btn_sound_off tv bnt_sound_text_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("tv_speaker")}>TV Speaker</button>
-                                    <button class="${stateObj.attributes.sound_output === "tv_external_speaker" ? 'btn_sound_on tv-opt bnt_sound_text_width' : 'btn_sound_off tv-opt bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("tv_external_speaker")}>TV + Optic</button>
+                                    <button class="${stateObj.attributes.sound_output === "tv_speaker" ? 'btn_sound_on tv bnt_sound_text_width' : 'btn_sound_off tv bnt_sound_text_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("tv_speaker")}>Динамики ТВ</button>
+                                    <button class="${stateObj.attributes.sound_output === "tv_external_speaker" ? 'btn_sound_on tv-opt bnt_sound_text_width' : 'btn_sound_off tv-opt bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("tv_external_speaker")}>ТВ + внешний</button>
                                     <button class="${stateObj.attributes.sound_output === "tv_speaker_headphone" ? 'btn_sound_on tv-phone bnt_sound_text_width' : 'btn_sound_off tv-phone bnt_sound_text_width ripple overlay'}" style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("tv_speaker_headphone")}>TV + H-Phone</button>
-                                    <button class="${stateObj.attributes.sound_output === "external_optical" ? 'btn_sound_on opt bnt_sound_text_width' : 'btn_sound_off opt bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("external_optical")}>Optical</button>
-                                    <button class="${stateObj.attributes.sound_output === "external_arc" ? 'btn_sound_on hdmi bnt_sound_text_width' : 'btn_sound_off hdmi bnt_sound_text_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("external_arc")}>HDMI</button>
+                                    <button class="${this._isExternalAudioSelected("Оптика / Coax", "external_optical") ? 'btn_sound_on opt bnt_sound_text_width' : 'btn_sound_off opt bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("external_optical")}>Оптика / Coax</button>
+                                    <button class="${this._isExternalAudioSelected("HDMI ARC", "external_arc") ? 'btn_sound_on hdmi bnt_sound_text_width' : 'btn_sound_off hdmi bnt_sound_text_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("external_arc")}>HDMI ARC</button>
                                     <button class="${stateObj.attributes.sound_output === "lineout" ? 'btn_sound_on line bnt_sound_text_width' : 'btn_sound_off line bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("lineout")}>Lineout</button>
                                     <button class="${stateObj.attributes.sound_output === "headphone" ? 'btn_sound_on phone bnt_sound_text_width' : 'btn_sound_off phone bnt_sound_text_width ripple overlay'}" style="margin-left: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("headphone")}>HeadPhone</button>
                                     <button class="${stateObj.attributes.sound_output === "bt_soundbar" ? 'btn_sound_on bluetooth bnt_sound_text_width' : 'btn_sound_off bluetooth bnt_sound_text_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 10);" @click=${() => this._select_sound_output("bt_soundbar")}>Bluetooth</button>
@@ -186,8 +186,8 @@ class LgRemoteControl extends LitElement {
                                     <button class="${stateObj.attributes.sound_output === "tv_speaker" ? 'btn_sound_on tv bnt_sound_icon_width' : 'btn_sound_off tv bnt_sound_icon_width ripple overlay'}" style="margin-left: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("tv_speaker")}><ha-icon class="icon_source" icon="mdi:television-classic"></button>
                                     <button class="${stateObj.attributes.sound_output === "tv_external_speaker" ? 'btn_sound_on tv-opt bnt_sound_icon_width' : 'btn_sound_off tv-opt bnt_sound_icon_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("tv_external_speaker")}>${tvOpticIcon()}</button>
                                     <button class="${stateObj.attributes.sound_output === "tv_speaker_headphone" ? 'btn_sound_on tv-phone bnt_sound_icon_width' : 'btn_sound_off tv-phone bnt_sound_icon_width ripple overlay'}" style="margin-left: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("tv_speaker_headphone")}>${tvHeadphonesIcon()}</button>
-                                    <button class="${stateObj.attributes.sound_output === "external_optical" ? 'btn_sound_on opt bnt_sound_icon_width' : 'btn_sound_off opt bnt_sound_icon_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("external_optical")}>${opticIcon()}</button>
-                                    <button class="${stateObj.attributes.sound_output === "external_arc" ? 'btn_sound_on hdmi bnt_sound_icon_width' : 'btn_sound_off hdmi bnt_sound_icon_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("external_arc")}>${arcIcon()}</button>
+                                    <button class="${this._isExternalAudioSelected("Оптика / Coax", "external_optical") ? 'btn_sound_on opt bnt_sound_icon_width' : 'btn_sound_off opt bnt_sound_icon_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("external_optical")}>${opticIcon()}</button>
+                                    <button class="${this._isExternalAudioSelected("HDMI ARC", "external_arc") ? 'btn_sound_on hdmi bnt_sound_icon_width' : 'btn_sound_off hdmi bnt_sound_icon_width ripple overlay'}"style="margin-left: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("external_arc")}>${arcIcon()}</button>
                                     <button class="${stateObj.attributes.sound_output === "lineout" ? 'btn_sound_on line bnt_sound_icon_width' : 'btn_sound_off line bnt_sound_icon_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("lineout")}>${lineOutIcon()}</button>
                                     <button class="${stateObj.attributes.sound_output === "headphone" ? 'btn_sound_on phone bnt_sound_icon_width' : 'btn_sound_off phone bnt_sound_icon_width ripple overlay'}" style="margin-left: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("headphone")}><ha-icon class="icon_source" icon="mdi:headphones"></button>
                                     <button class="${stateObj.attributes.sound_output === "bt_soundbar" ? 'btn_sound_on bluetooth bnt_sound_icon_width' : 'btn_sound_off bluetooth bnt_sound_icon_width ripple overlay'}" style="margin-right: calc(var(--remotewidth) / 7.5);" @click=${() => this._select_sound_output("bt_soundbar")}><ha-icon class="icon_source" icon="mdi:bluetooth"></button>
@@ -238,7 +238,7 @@ class LgRemoteControl extends LitElement {
                             <div class="grid-container-source">
                                 ${this.config.sources.map(source => {
                                     return html`
-                                        <button class="btn_source ripple" @click=${() => this._select_source(source.name)}>
+                                        <button class="btn_source ripple" title=${source.name} aria-label=${source.name} @click=${() => source.button ? this._button(source.button) : this._select_source(source.name)}>
                                             ${LgRemoteControl.getIcon(source.icon)}
                                         </button>
                                     `;
@@ -507,11 +507,34 @@ class LgRemoteControl extends LitElement {
         });
     }
 
+    _orderedSources(sources = []) {
+        const priority = this.config.source_order || ["PS5", "ONKYO", "APPLE"];
+        const rank = name => priority.includes(name) ? priority.indexOf(name) : priority.length;
+        return [...sources].sort((a, b) => rank(a) - rank(b));
+    }
+
+    _isExternalAudioSelected(option, legacyOutput) {
+        const output = this.hass.states[this.config.entity]?.attributes.sound_output;
+        if (!this.config.audio_input_entity) return output === legacyOutput;
+        return output === "external_speaker" &&
+            this.hass.states[this.config.audio_input_entity]?.state === option;
+    }
+
     _select_sound_output(sound_output) {
-        this.hass.callService("webostv", "select_sound_output", {
-            entity_id: this.config.entity,
-            sound_output: sound_output
-        });
+        const inputs = {external_arc: "HDMI ARC", external_optical: "Оптика / Coax"};
+        const outputs = {tv_speaker: "Динамики ТВ", tv_external_speaker: "ТВ + внешний выход", external_speaker: "HDMI ARC / оптика"};
+        const entity = inputs[sound_output] ? this.config.audio_input_entity : this.config.audio_output_entity;
+        const option = inputs[sound_output] || outputs[sound_output];
+        if (entity && option) {
+            const selector = this.hass.states[entity];
+            if (!selector || ["unavailable", "unknown"].includes(selector.state) ||
+                !selector.attributes.options?.includes(option)) return;
+            this.hass.callService("select", "select_option", {entity_id: entity, option});
+        } else {
+            this.hass.callService("webostv", "select_sound_output", {
+                entity_id: this.config.entity, sound_output
+            });
+        }
         this._show_sound_output = false;
     }
 
@@ -560,6 +583,7 @@ class LgRemoteControl extends LitElement {
 
     static get styles() {
         return css`
+          button.tv-phone, button.line, button.phone, button.bluetooth { display: none !important; }
           @keyframes blinker {
             50% {
               opacity: 0;
@@ -663,7 +687,7 @@ class LgRemoteControl extends LitElement {
             grid-template-columns: 1fr 1fr;
             grid-template-rows: 28% 6% 16% 16% 16% 16% 6%;
             height: var(--remotewidth);
-            grid-template-areas: "bnt title"". .""tv tv-opt""tv-phone opt""hdmi line""phone bluetooth"}
+            grid-template-areas: "bnt title"". .""tv tv-opt""hdmi opt""tv-phone line""phone bluetooth"}
           .grid-container-color_btn, .grid-container-source {
             display: grid;
             grid-template-columns: 1fr 1fr 1fr 1fr;
